@@ -1,0 +1,29 @@
+static void default_lq_ffeth_handle_lqchange(void):
+	
+
+
+
+static void default_lq_parser_ffeth(struct olsr *olsr, struct interface *in_if, union olsr_ip_addr *from_addr)
+
+static void default_lq_ffeth_timer(void __attribute__ ((unused)) * context)
+
+static void default_lq_initialize_ffeth(void);
+
+static olsr_linkcost default_lq_calc_cost_ffeth(const void *lq);
+
+static void default_lq_packet_loss_worker_ffeth(struct link_entry *link, void *lq, bool lost);
+static void default_lq_memorize_foreign_hello_ffeth(void *local, void *foreign);
+
+static int default_lq_serialize_hello_lq_pair_ffeth(unsigned char *buff, void *lq);
+static void default_lq_deserialize_hello_lq_pair_ffeth(const uint8_t ** curr, void *lq);
+static int default_lq_serialize_tc_lq_pair_ffeth(unsigned char *buff, void *lq);
+static void default_lq_deserialize_tc_lq_pair_ffeth(const uint8_t ** curr, void *lq);
+
+static void default_lq_copy_link2neigh_ffeth(void *t, void *s);
+static void default_lq_copy_link2tc_ffeth(void *target, void *source);
+static void default_lq_clear_ffeth(void *target);
+static void default_lq_clear_ffeth_hello(void *target);
+
+static const char *default_lq_print_ffeth(void *ptr, char separator, struct lqtextbuffer *buffer);
+static const char *default_lq_print_cost_ffeth(olsr_linkcost cost, struct lqtextbuffer *buffer);
+
