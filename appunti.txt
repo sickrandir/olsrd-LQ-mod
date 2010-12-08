@@ -1,29 +1,28 @@
-static void default_lq_ffeth_handle_lqchange(void):
-	
+Il sistema di link quality:
+lq_plugin.h definisce le funzioni necessarie per realizzare la link quality. In lq_plugin. c'è tutta la logica che realizza la link quality a livello generale. Le singole funzioni eseguite vengono chiamate tramite puntatori a funzioni a seconda di quale plugin per la link_quality è attivato.
 
 
 
-static void default_lq_parser_ffeth(struct olsr *olsr, struct interface *in_if, union olsr_ip_addr *from_addr)
 
-static void default_lq_ffeth_timer(void __attribute__ ((unused)) * context)
+- il plugin per la link quality ffeth considera in maniere diversa le interfacce ethernet cambia i costi dei link.
+- un'interfaccia è riconosciuta come ethernet non nel plugin della link quality ma già a "basso livello" in olsr. Attualmente non c'è modo per olsr di riconoscere un interfaccia ethernet collegata ad un device homeplug. Come può fare olsr a riconoscere un interfaccia Homeplug?
+    1- rilevamento: su tutte le interfacce olsr dovrebbe spedire trame ethernet homeplug per discovery. Nel momento in cui riceve una risposta (scambio Homeplug A038-A039) ottiene anche le informazioni sulle stazioni homeplug viste e la qualità del canale vista verso esse.
+    2- configurazione: nella configurazione di olsr si specifica se un'interfaccia ethernet è connessa ad un device Homeplug, attivando di conseguenza la rivelazione Homeplug.
+    
+Discovery Homeplug
 
-static void default_lq_initialize_ffeth(void);
+I messaggi Homeplug sono trame ethernet broadcast o unicast che sembra difficile integrare nel sistema di messaggi di olsr che prevede solo messaggi incapsulati in IP4 o IP6. Anche tutto il sistema di dispatching e ricezione è fondato sull'utilizzo del livello di rete IP.
+OLSR utilizza per ricevere e spedire messaggi un socket SOCK_DGRAM, quindi non permette di specificare l'header della trama ethernet (problema). 
+Bisogna decidere quanto cercare di integrare la soluzione di discovery e probing Homeplug all'interno dell'architettura di OLSR. 
+Alternative:
+- aggiungere un sistema di messaggi parallelo in olsr usando SOCK_RAW. In questo modo sarebbe possibile specificare l'header ethernet e quindi costruire i messaggi homeplug -> elegante, oneroso, invasivo nella codebase di olsr, ne vale la pena?
+- 
 
-static olsr_linkcost default_lq_calc_cost_ffeth(const void *lq);
+- con un semplice plugin per la link quality è impossibile riuscire a spedire trame a livello ethernet. Valutare cosa è possibile fare con un plugin più generale. Vedi arprefresh plugin: utilizza un SOCK_RAW.
+Ipotesi: realizzare un plugin che si occupa della comunicazione e della discovery homeplug e rendere disponibili queste informazioni ad un plugin per la link quality modificato.‪ 
 
-static void default_lq_packet_loss_worker_ffeth(struct link_entry *link, void *lq, bool lost);
-static void default_lq_memorize_foreign_hello_ffeth(void *local, void *foreign);
+     
+Scenario:
 
-static int default_lq_serialize_hello_lq_pair_ffeth(unsigned char *buff, void *lq);
-static void default_lq_deserialize_hello_lq_pair_ffeth(const uint8_t ** curr, void *lq);
-static int default_lq_serialize_tc_lq_pair_ffeth(unsigned char *buff, void *lq);
-static void default_lq_deserialize_tc_lq_pair_ffeth(const uint8_t ** curr, void *lq);
-
-static void default_lq_copy_link2neigh_ffeth(void *t, void *s);
-static void default_lq_copy_link2tc_ffeth(void *target, void *source);
-static void default_lq_clear_ffeth(void *target);
-static void default_lq_clear_ffeth_hello(void *target);
-
-static const char *default_lq_print_ffeth(void *ptr, char separator, struct lqtextbuffer *buffer);
-static const char *default_lq_print_cost_ffeth(olsr_linkcost cost, struct lqtextbuffer *buffer);
-
+La funzione di discovery viene comunque svolta da OLSR. E' necessario definire una configurazione particolare per l'interfaccia ethernet che è collegata all'interfaccia PLC. In questo modo il plugin della link quality può trattare l'interfaccia in maniera particolare.
+Si definisce un plugin per la link quality che utilizzi dei messaggi di hello modificati per comprendere il mac address dell'eventuale interfaccia homeplug collegata.
