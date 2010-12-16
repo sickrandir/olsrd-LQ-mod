@@ -52,7 +52,6 @@ struct station_data * deserialize_station_data (unsigned char *buff, int n)
 
 int server2 (int client_socket)
 {
-  while (1) {
     int length;
     unsigned char* mes;
 
@@ -81,10 +80,9 @@ int server2 (int client_socket)
     {
         /* Free the buffer.  */
         free (mes);      
-	return 1;
+		return 1;
     }
     free (mes); 	
-  }
 }
 
 
@@ -95,61 +93,64 @@ int server2 (int client_socket)
 int server (int client_socket)
 {
   while (1) {
-    int length;
-    char* mes;
-
-    /* First, read the length of the text message from the socket.  If
-       read returns zero, the client closed the connection.  */
-    if (read (client_socket, &length, sizeof (length)) == 0)
+    u_int8_t msg;
+    if (recv(client_socket, &msg, sizeof (msg), 0) == 0)
       return 0;
-    printf ("lunghezza: %d\n", length);
-    /* Allocate a buffer to hold the text.  */
-    mes = (char*) malloc (length);
-    /* Read the text itself, and print it.  */
-    read (client_socket, mes, length);
-    printf ("%s\n", mes);
-    /* If the client sent the message "quit", we're all done.  */
-    if (!strcmp (mes, "quit"))
-    {
-        /* Free the buffer.  */
-        free (mes);      
-	return 1;
-    }
-    free (mes); 	
-  }
+    if (msg == 'q'){
+		return 1;
+	}
+    if (msg == 'p'){
+		//serializza dati rete PLC più recenti
+		//invia dati PLC sullo stesso socket
+	}
 }
 
 int main (int argc, char* const argv[])
 {
-  const char* const socket_name = argv[1];
-  int socket_fd;
-  struct sockaddr_un name;
-  int client_sent_quit_message;
+	const char* const socket_name = argv[1];
+	int socket_fd;
+	struct sockaddr_un name;
+	int client_message;
 
-  /* Create the socket.  */
-  socket_fd = socket (PF_LOCAL, SOCK_STREAM, 0);
-  /* Indicate this is a server.  */
-  name.sun_family = AF_LOCAL;
-  strcpy (name.sun_path, socket_name);
-  bind (socket_fd, &name, SUN_LEN (&name));
-  /* Listen for connections.  */
-  listen (socket_fd, 5);
+	/* Create the socket.  */
+	socket_fd = socket (PF_LOCAL, SOCK_STREAM, 0);
+	/* Indicate this is a server.  */
+	name.sun_family = AF_LOCAL;
+	strcpy (name.sun_path, socket_name);
+	bind (socket_fd, &name, SUN_LEN (&name));
+	/* Listen for connections.  */
+	listen (socket_fd, 5);
 
-  /* Repeatedly accept connections, spinning off one server() to deal
-     with each client.  Continue until a client sends a "quit" message.  */
-  do {
-    struct sockaddr_un client_name;
-    socklen_t client_name_len;
-    int client_socket_fd;
+	
+	struct timeval timeout = {
+		.tv_sec = 5,
+		.tv_usec = 0,
+	};
+	struct timeval select_to;
 
-    /* Accept a connection.  */
-    client_socket_fd = accept (socket_fd, &client_name, &client_name_len);
-    /* Handle the connection.  */
-    client_sent_quit_message = server2 (client_socket_fd);
-    /* Close our end of the connection.  */
-    close (client_socket_fd);
-  }
-  while (!client_sent_quit_message);
+	int maxfd;
+	fd_set fset ;
+	/* initialize file descriptor set */
+	
+	maxfd = socket_fd + 1;
+	FD_ZERO (&fset);
+	FD_SET(socket_fd, &fset);
+	
+	do {
+		select_to = timeout;
+		select_rc = select(maxfd, &fset, NULL, NULL, &select_to);
+		
+		if (select_rc > 1){
+			/* Accept a connection.  */
+			client_socket_fd = accept (socket_fd, &client_addr, &client_addr_len);
+			/* Handle the connection.  */
+			client_message = server (client_socket_fd);
+		}		
+		
+		/* Close our end of the connection.  */
+		close (client_socket_fd);
+	} while (!client_message);
+ 
 
   /* Remove the socket file.  */
   close (socket_fd);

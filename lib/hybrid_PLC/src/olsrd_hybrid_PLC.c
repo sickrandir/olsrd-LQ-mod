@@ -16,7 +16,4 @@ olsrd_plugin_init(void)
 		execlp("./faifa_proxy", "faifa_proxy", NULL);
 		printf("Return not expected. Must be an execlp error.n");
 	}
-
-
-
 }

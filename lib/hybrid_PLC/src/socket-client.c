@@ -18,8 +18,6 @@ struct station_data {
     u_int8_t lq;	
 };
 
-
-
 void write_text (int socket_fd, const char* text)
 {
   /* Write the number of bytes in the string, including

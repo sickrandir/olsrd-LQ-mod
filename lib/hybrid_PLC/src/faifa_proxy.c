@@ -4,14 +4,13 @@
  *  Created on: Dec 13, 2010
  *      Author: kinto
  */
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <pthread.h>
 #include <netinet/in.h>
+#include <sys/time.h>
 
 #include "faifa.h"
 #include "frame.h"
@@ -28,8 +27,7 @@ extern FILE *in_stream;
 faifa_t *faifa;
 u_int8_t hpav_intellon_oui[3] = { 0x00, 0xB0, 0x52};
 u_int8_t hpav_intellon_macaddr[ETHER_ADDR_LEN] = { 0x00, 0xB0, 0x52, 0x00, 0x00, 0x01 };
-
-
+struct network_data * nd;
 
 struct station_data {
 	struct sta_info sta_info;
@@ -50,6 +48,8 @@ struct network_data {
     float rx_tbe_failure_perc;
 	struct station_data sta_data[];
 };
+
+
 
 static void error(char *message)
 {
@@ -259,7 +259,42 @@ void receive_frame(struct network_data **nd)
 }
 
 
-int serialize_station_data (unsigned char *buff, void *ptr,int n)
+void update_PLC_data (){
+	int c,s;
+    u_int8_t frame_buf[1518];
+    int frame_len = sizeof(frame_buf);
+    c = init_frame(frame_buf, frame_len, 0xA038);
+    s = send_A038(frame_buf, frame_len, c);
+	receive_frame(&nd);
+}
+
+
+int set_timer(struct timeval &tv, time_t sec)
+{
+    gettimeofday(&tv,NULL);
+    tv.tv_sec+=sec;
+    return 1;
+}
+
+
+int check_timer(struct timeval &tv, time_t sec)
+{
+    struct timeval ctv;
+    gettimeofday(&ctv,NULL);
+
+    if(ctv.tv_sec > tv.tv_sec)
+    {
+        gettimeofday(&tv,NULL);
+        tv.tv_sec+=sec;
+        return 1;
+    }
+    else
+    	return 0;
+}
+
+
+
+int serialize_stations_data (unsigned char *buff, void *ptr,int n)
 {
     int i;
     for (i=0; i < n; i++)
@@ -275,44 +310,20 @@ int serialize_station_data (unsigned char *buff, void *ptr,int n)
     }
 }
 
-int server (int client_socket)
+int server (int client_socket) 
 {
   while (1) {
-    int length;
-    unsigned char* mes;
-
-    /* First, read the length of the text message from the socket.  If
-       read returns zero, the client closed the connection.  */
-    if (read (client_socket, &length, sizeof (length)) == 0)
+    u_int8_t msg;
+    if (recv(client_socket, &msg, sizeof (msg), 0) == 0)
       return 0;
-    printf ("lunghezza: %d\n", length);
-    ///* Allocate a buffer to hold the text.  */
-    mes = (unsigned char*) malloc (length);
-    ///* Read the text itself, and print it.  */
-    read (client_socket, mes, length);
-
-    int n_stas = length / 7;
-    printf ("n_stas: %d\n", n_stas);
-
-    struct station_data *sd= deserialize_station_data (mes, n_stas);
-    int i;
-    for (i=0; i<n_stas; i++)
-    {
-		printf("lq: %x\n", sd[i].lq);
-    }
-
-    /* If the client sent the message "quit", we're all done.  */
-    if (!strcmp (mes, "quit"))
-    {
-        /* Free the buffer.  */
-        free (mes);
-	return 1;
-    }
-    free (mes);
-  }
+    if (msg == 'q'){
+		return 1;
+	}
+    if (msg == 'p'){
+		//serializza dati rete PLC più recenti
+		//invia dati PLC sullo stesso socket
+	}
 }
-
-
 
 int main(int argc, char **argv)
 {
@@ -348,7 +359,7 @@ int main(int argc, char **argv)
 	strcpy(name.sun_path, socket_name);
 	bind(socket_fd, &name, SUN_LEN(&name));
 	/* Listen for connections.  */
-	listen(socket_fd, 5);
+	listen(socket_fd, 1);
 
 	/* Repeatedly accept connections, spinning off one server() to deal
 	 with each client.  Continue until a client sends a "quit" message.  */
@@ -361,39 +372,21 @@ int main(int argc, char **argv)
 		client_socket_fd = accept(socket_fd, &client_name, &client_name_len);
 		/* Handle the connection.  */
 		client_sent_quit_message = server(client_socket_fd);
+
+		struct timeval tv;
+		set_timer(tv, 5); //set up a delay timer
+		printf("start counting.\n");
+		if (check_timer(tv, 5) == 1)
+		{
+			update_PLC_data();
+			set_timer(tv, 5);
+		}
 		/* Close our end of the connection.  */
 		close(client_socket_fd);
 	} while (!client_sent_quit_message);
 
+  	int i;
 
-
-    struct network_data *nd;
-
-    int c,s;
-    u_int8_t mac[6];
-    u_int8_t frame_buf[1518];
-    int frame_len = sizeof(frame_buf);
-    c = init_frame(frame_buf, frame_len, 0xA038);
-    s = send_A038(frame_buf, frame_len, c);
-	receive_frame(&nd);
-	struct network_data *nd2;
-	nd2 = (struct network_data *) malloc(sizeof(*nd));
-	memcpy(nd2,nd,sizeof(*nd));
-	memcpy(nd2->sta_data,nd->sta_data,sizeof(struct station_data[3]));
-
-	int i;
-	for (i=0; i < nd2->station_count; i++)
-	{
-		struct station_data sd = nd2->sta_data[i];
-		if (sd.sta_info.avg_phy_tx_rate == 0 || sd.sta_info.avg_phy_rx_rate == 0)
-			continue;
-		int z;
-		for (z=0; z < 6; z++)
-			mac[z] = (u_int8_t) sd.sta_info.sta_macaddr[z];
-		c = init_frame(frame_buf, frame_len, 0xA070);
-		s = send_A070(frame_buf, frame_len, c, mac, 0);
-		receive_frame(&nd2);
-	}
 	faifa_printf(out_stream, "Ricevuto. Chiudo\n");
     faifa_close(faifa);
 	faifa_free(faifa);
