@@ -8,9 +8,9 @@ src/olsrd_plugin.o src/olsrd_plugin.d: Makefile ../../Makefile.inc src/olsrd_plu
  /usr/lib/gcc/x86_64-linux-gnu/4.4.3/include/stdarg.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
  /usr/include/string.h /usr/include/xlocale.h \
- src/../../../src/olsrd_plugin.h ../../src/olsrd_plugin.h \
- ../../src/olsr.h ../../src/olsr_protocol.h ../../src/olsr_types.h \
- /usr/include/inttypes.h /usr/include/stdint.h /usr/include/bits/wchar.h \
+ src/../../../src/olsrd_plugin.h src/olsrd_plugin.h ../../src/olsr.h \
+ ../../src/olsr_protocol.h ../../src/olsr_types.h /usr/include/inttypes.h \
+ /usr/include/stdint.h /usr/include/bits/wchar.h \
  /usr/include/sys/select.h /usr/include/bits/select.h \
  /usr/include/bits/sigset.h /usr/include/time.h /usr/include/bits/time.h \
  /usr/include/sys/types.h /usr/include/endian.h \
@@ -26,4 +26,7 @@ src/olsrd_plugin.o src/olsrd_plugin.d: Makefile ../../Makefile.inc src/olsrd_plu
  /usr/include/errno.h /usr/include/bits/errno.h \
  /usr/include/linux/errno.h /usr/include/asm/errno.h \
  /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
- ../../src/interfaces.h ../../src/mantissa.h src/olsrd_hybrid_PLC.h
+ ../../src/interfaces.h ../../src/mantissa.h ../../src/scheduler.h \
+ ../../src/common/list.h /usr/include/unistd.h \
+ /usr/include/bits/posix_opt.h /usr/include/bits/confname.h \
+ /usr/include/getopt.h /usr/include/sys/un.h

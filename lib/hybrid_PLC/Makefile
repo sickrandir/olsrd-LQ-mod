@@ -46,8 +46,8 @@ include $(TOPDIR)/Makefile.inc
 default_target: $(PLUGIN_FULLNAME)
 
 $(PLUGIN_FULLNAME): $(OBJS) version-script.txt
-		$(CC) $(LDFLAGS) -I/usr/local/include/faifa -o $(PLUGIN_FULLNAME) $(OBJS) $(LIBS) -lfaifa
-
+		$(CC) $(LDFLAGS) -o $(PLUGIN_FULLNAME) $(OBJS) $(LIBS)
+		
 install:	$(PLUGIN_FULLNAME)
 		$(STRIP) $(PLUGIN_FULLNAME)
 		$(INSTALL_LIB)

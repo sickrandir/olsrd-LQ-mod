@@ -17,6 +17,17 @@ LoadPlugin "olsrd_txtinfo.so.0.1"
     PlParam     "Accept"   "127.0.0.1"
 }
 
+LoadPlugin "olsrd_hybrid_PLC.so.0.1"
+{
+    PlParam     "test"   "ciao"
+}
+
+#LoadPlugin "olsrd_mini.so.0.1"
+#{
+#	PlParam "test" "hello"
+#}
+
+
 InterfaceDefaults {
     Ip4Broadcast      192.168.1.255
 }
@@ -30,5 +41,5 @@ Interface "br0"
     # valid Modes are "mesh" and "ether"
     # (default is "mesh")
 
-    Mode "ether"
+    Mode "mesh"
 }
