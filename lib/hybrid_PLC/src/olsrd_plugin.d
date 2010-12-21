@@ -1,11 +1,11 @@
 src/olsrd_plugin.o src/olsrd_plugin.d: Makefile ../../Makefile.inc src/olsrd_plugin.c /usr/include/stdio.h \
  /usr/include/features.h /usr/include/bits/predefs.h \
  /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h \
- /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.3/include/stddef.h \
+ /usr/include/gnu/stubs.h /usr/include/gnu/stubs-32.h \
+ /usr/lib/gcc/i686-linux-gnu/4.4.5/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.4.3/include/stdarg.h \
+ /usr/lib/gcc/i686-linux-gnu/4.4.5/include/stdarg.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
  /usr/include/string.h /usr/include/xlocale.h \
  src/../../../src/olsrd_plugin.h src/olsrd_plugin.h ../../src/olsr.h \
@@ -22,11 +22,12 @@ src/olsrd_plugin.o src/olsrd_plugin.d: Makefile ../../Makefile.inc src/olsrd_plu
  /usr/include/asm/sockios.h /usr/include/asm-generic/sockios.h \
  /usr/include/netinet/in.h /usr/include/bits/in.h ../../src/olsr_cfg.h \
  ../../src/common/autobuf.h ../../src/defs.h /usr/include/sys/time.h \
- /usr/include/sys/times.h /usr/include/stdlib.h /usr/include/alloca.h \
- /usr/include/errno.h /usr/include/bits/errno.h \
+ /usr/include/sys/times.h /usr/include/stdlib.h \
+ /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
+ /usr/include/alloca.h /usr/include/errno.h /usr/include/bits/errno.h \
  /usr/include/linux/errno.h /usr/include/asm/errno.h \
  /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
  ../../src/interfaces.h ../../src/mantissa.h ../../src/scheduler.h \
  ../../src/common/list.h /usr/include/unistd.h \
- /usr/include/bits/posix_opt.h /usr/include/bits/confname.h \
- /usr/include/getopt.h /usr/include/sys/un.h
+ /usr/include/bits/posix_opt.h /usr/include/bits/environments.h \
+ /usr/include/bits/confname.h /usr/include/getopt.h /usr/include/sys/un.h

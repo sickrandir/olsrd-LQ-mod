@@ -65,6 +65,7 @@ static void print_plc_data(void);
 struct plc_data *p_data;
 u_int8_t p_size_t;
 int socket_fd;
+struct sockaddr_un name;
 
 /****************************************************************************
  *                Functions that the plugin MUST provide                    *
@@ -102,7 +103,7 @@ void olsrd_get_plugin_parameters(const struct olsrd_plugin_parameters **params,
  * Called after all parameters are passed
  */
 int olsrd_plugin_init(void) {
-	int pid, error;
+	int pid;
 	printf("*** Hybrid PLC: plugin_init\n");
 	char current_path[FILENAME_MAX];
 	getcwd(current_path, sizeof(current_path));
@@ -117,26 +118,7 @@ int olsrd_plugin_init(void) {
 		printf("Return not expected. Must be an execlp error.\n");
 	} else {
 		printf("sono nel PLUGIN!!!\n");
-		const char* const socket_name = "faifaproxy";
-		struct sockaddr_un name;
-		/* Create the socket.  */
-		socket_fd = socket(PF_LOCAL, SOCK_STREAM, 0);
-		/* Store the server's name in the socket address.  */
-		name.sun_family = AF_LOCAL;
-		strcpy(name.sun_path, socket_name);
-		printf("socket plugin: %s\n", name.sun_path);
-		/* Connect the socket.  */
-		error = 1;
-		while(error != 0) {
-			error = connect(socket_fd, &name, SUN_LEN (&name));
-			if (error == 0) {
-				printf("socket ok!\n");
-				olsr_start_timer(3 * MSEC_PER_SEC, 0, OLSR_TIMER_PERIODIC, &update_plc_data, NULL, 0);
-			}
-			else {
-				printf("ERROR: %s\n", strerror(errno));
-			}
-		}
+		olsr_start_timer(2 * MSEC_PER_SEC, 0, OLSR_TIMER_PERIODIC, &update_plc_data, NULL, 0);
 	}
 	return 1;
 }
@@ -174,28 +156,48 @@ static void print_plc_data(void) {
 }
 
 static void update_plc_data(void) {
-	printf("update PLC data!\n");
-	char m = 'p';
-	u_int8_t n_stas;
-	int length;
-	printf("sizeof(int): %d \n", sizeof(int));
-	unsigned char *buff;
-	send(socket_fd, &m, sizeof(m), 0);
-	printf("Poll mandato!\n");
-	if (recv(socket_fd, &p_size_t, sizeof(p_size_t), 0) == 0) {
-		return 0;
-		printf("Non ricevo p_size_t!\n");
+	const char* const socket_name = "faifaproxy";
+	/* Create the socket.  */
+	socket_fd = socket(PF_LOCAL, SOCK_STREAM, 0);
+	/* Store the server's name in the socket address.  */
+	name.sun_family = AF_LOCAL;
+	strcpy(name.sun_path, socket_name);
+	printf("socket plugin: %s\n", name.sun_path);
+
+	/* Connect the socket.  */
+	int error;
+	error = 1;
+	while (error != 0) {
+		error = connect(socket_fd, &name, SUN_LEN (&name));
+		if (error == 0) {
+			printf("socket ok!\n");
+			printf("update PLC data!\n");
+			char m = 'p';
+			u_int8_t n_stas;
+			int length;
+			unsigned char *buff;
+			send(socket_fd, &m, sizeof(m), 0);
+			printf("Poll mandato!\n");
+			if (recv(socket_fd, &p_size_t, sizeof(p_size_t), 0) == 0) {
+				printf("Non ricevo p_size_t!\n");
+				//return;
+			}
+			printf("Numero di stazioni presenti ricevuto: %d\n", p_size_t);
+			length = p_size_t * sizeof(struct plc_data);
+			buff = (unsigned char*) malloc(length);
+			if (recv(socket_fd, buff, length, 0) == 0) {
+				printf("Non ricevo buff!\n");
+				//return;
+			}
+			recv(socket_fd, buff, length, 0);
+			deserialize_stations_data(buff);
+			//print_plc_data();
+			close(socket_fd);
+
+		} else {
+			printf("ERROR: %s\n", strerror(errno));
+		}
 	}
-	printf("Numero di stazioni presenti ricevuto: %d\n", p_size_t);
-	length = p_size_t * sizeof(struct plc_data);
-	buff = (unsigned char*) malloc(length);
-	if (recv(socket_fd, buff, length, 0) == 0) {
-		printf("Non ricevo buff!\n");
-		return 0;
-	}
-	//recv(socket_fd, buff, length, 0);
-	deserialize_stations_data(buff);
-	print_plc_data();
 }
 
 /****************************************************************************

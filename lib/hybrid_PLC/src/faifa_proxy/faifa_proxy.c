@@ -330,13 +330,13 @@ int server(int client_socket) {
 		printf("Numero di stazioni da mandare: %d\n", p_size_t);
 		int length = p_size_t * sizeof(struct plc_data);
 		unsigned char buff[length];
-		//serialize_stations_data(&buff);
+		serialize_stations_data(&buff);
 		int i;
 		for (i = 0; i < sizeof(buff); i++) {
 			printf("Buff[%d]: %x\n", i, buff[i]);
 		}
-		//send(client_socket, &p_size_t, sizeof(p_size_t), 0);
-		//send(client_socket, buff, length, 0);
+		send(client_socket, &p_size_t, sizeof(p_size_t), 0);
+		send(client_socket, buff, length, 0);
 		return 0;
 	}
 }
@@ -388,7 +388,7 @@ int main(int argc, char **argv) {
 		FD_ZERO(&rfds);
 		FD_SET(socket_fd, &rfds);
 
-		ts.tv_sec = 3;
+		ts.tv_sec = 4;
 		ts.tv_usec = 0;
 		retval = 1;
 		maxfd = socket_fd + 1;
@@ -406,7 +406,7 @@ int main(int argc, char **argv) {
 			close(client_socket_fd);
 			/* FD_ISSET(0, &rfds) will be true. */
 		} else
-			printf("Non ho ricevuto nulla nell'arco di 3 secondi.\n");
+			printf("Non ho ricevuto nulla nell'arco di 4 secondi.\n");
 		if (check_timer(tv, 5) == 1) {
 			set_timer(&tv, 5);
 			printf("timer scaduto\n");
