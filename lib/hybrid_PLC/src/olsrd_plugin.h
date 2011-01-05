@@ -37,6 +37,14 @@
 #ifndef _OLSRD_HYBRID_PLC
 #define _OLSRD_HYBRID_PLC
 
+#include <stdlib.h>
+
+struct plc_data {
+	u_int8_t mac[6];
+	u_int8_t lq;
+	u_int8_t nlq;
+};
+
 /****************************************************************************
  *                Functions that the plugin MUST provide                    *
  ****************************************************************************/
@@ -46,8 +54,18 @@ int olsrd_plugin_init(void);
 
 int olsrd_plugin_interface_version(void);
 
-#endif
 
+/* LQ get PLC data functions */
+
+void get_plc_mac(unsigned char *);
+
+int get_plc_data_size(void);
+
+void get_plc_data(void *);
+
+
+
+#endif
 /*
  * Local Variables:
  * c-basic-offset: 2

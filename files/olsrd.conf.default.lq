@@ -1,6 +1,6 @@
 DebugLevel  1
 
-LinkQualityAlgorithm    "etx_ffeth"
+LinkQualityAlgorithm    "etx_hybrid_plc"
 
 # Fisheye mechanism for TCs (0 meansoff, 1 means on)
 # (default is 1)
@@ -19,7 +19,7 @@ LoadPlugin "olsrd_txtinfo.so.0.1"
 
 LoadPlugin "olsrd_hybrid_PLC.so.0.1"
 {
-    PlParam     "test"   "ciao"
+    PlParam     "plc_mac"   "00:0C:C3:44:0C:F3"
 }
 
 #LoadPlugin "olsrd_mini.so.0.1"
@@ -34,7 +34,7 @@ InterfaceDefaults {
 
 
 # WARNING, don't forget to insert your interface names here !
-Interface "eth0"
+Interface "br0"
 {
     # Interface Mode is used to prevent unnecessary
     # packet forwarding on switched ethernet interfaces

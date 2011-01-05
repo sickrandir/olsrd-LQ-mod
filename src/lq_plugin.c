@@ -52,6 +52,8 @@
 #include "lq_plugin_default_fpm.h"
 #include "lq_plugin_default_ff.h"
 #include "lq_plugin_default_ffeth.h"
+#include "lq_plugin_default_hybrid_plc.h"
+
 
 #include <assert.h>
 
@@ -101,6 +103,7 @@ init_lq_handler_tree(void)
   register_lq_handler(&lq_etx_fpm_handler, LQ_ALGORITHM_ETX_FPM_NAME);
   register_lq_handler(&lq_etx_ff_handler, LQ_ALGORITHM_ETX_FF_NAME);
   register_lq_handler(&lq_etx_ffeth_handler, LQ_ALGORITHM_ETX_FFETH_NAME);
+  register_lq_handler(&lq_etx_hybrid_plc_handler, LQ_ALGORITHM_ETX_HYBRID_PLC_NAME);
 
   if (olsr_cnf->lq_algorithm == NULL) {
     activate_lq_handler(DEF_LQ_ALGORITHM);

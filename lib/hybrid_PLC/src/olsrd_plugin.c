@@ -48,20 +48,16 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <errno.h>
+#include <ctype.h>
 
 
 #define PLUGIN_INTERFACE_VERSION 5
-
-struct plc_data {
-	u_int8_t mac[6];
-	u_int8_t lq;
-	u_int8_t nlq;
-};
 
 static void update_plc_data(void);
 static void deserialize_stations_data(unsigned char *buff);
 static void print_plc_data(void);
 
+u_int8_t plc_mac[6];
 struct plc_data *p_data;
 u_int8_t p_size_t;
 int socket_fd;
@@ -79,9 +75,32 @@ int olsrd_plugin_interface_version(void) {
 	return PLUGIN_INTERFACE_VERSION;
 }
 
-static int set_plugin_test(const char *value, void *data __attribute__ ((unused)),
-		set_plugin_parameter_addon addon __attribute__ ((unused))) {
-	printf("\n*** Hybrid PLC: parameter test: %s\n", value);
+static int set_plugin_plc_mac(const char *value, void *data __attribute__ ((unused)), set_plugin_parameter_addon addon __attribute__ ((unused))) {
+	int i, j;
+	unsigned int temp;
+	u_char ch;
+	i = 0;
+	j = 0;
+	printf("\n*** Hybrid PLC: parameter plc_mac: %s\n", value);
+	while (value[i] != '\0') {
+		if (value[i] == ':') {
+			i++;
+			continue;
+		}
+		//Convert letter into lower case.
+		ch = tolower(value[i]);
+		printf("\n*** Current character: %c\n", ch);
+		if ((ch < '0' || ch > '9') && (ch < 'a' || ch > 'f')) {
+			return 1;
+		}
+		sscanf(value+i, "%02x", &temp);
+		printf("\n*** temp: %02x\n", temp);
+		plc_mac[j] = temp;
+		printf("\n*** plc_mac[2]: %02x\n", plc_mac[2]);
+		i = i+2;
+		j++;
+	}
+	printf("PLC MAC address: %02x:%02x:%02x:%02x:%02x:%02x\n", plc_mac[0], plc_mac[1], plc_mac[2], plc_mac[3], plc_mac[4], plc_mac[5]);
 	return 0;
 }
 
@@ -90,10 +109,9 @@ static int set_plugin_test(const char *value, void *data __attribute__ ((unused)
  * Called for all plugin parameters
  */
 static const struct olsrd_plugin_parameters plugin_parameters[] = { { .name =
-		"test", .set_plugin_parameter = &set_plugin_test, .data = NULL }, };
+		"plc_mac", .set_plugin_parameter = &set_plugin_plc_mac, .data = NULL }, };
 
-void olsrd_get_plugin_parameters(const struct olsrd_plugin_parameters **params,
-		int *size) {
+void olsrd_get_plugin_parameters(const struct olsrd_plugin_parameters **params, int *size) {
 	*params = plugin_parameters;
 	*size = sizeof(plugin_parameters) / sizeof(*plugin_parameters);
 }
@@ -104,8 +122,8 @@ void olsrd_get_plugin_parameters(const struct olsrd_plugin_parameters **params,
  */
 int olsrd_plugin_init(void) {
 	int pid;
-	printf("*** Hybrid PLC: plugin_init\n");
 	char current_path[FILENAME_MAX];
+	printf("*** Hybrid PLC: plugin_init\n");
 	getcwd(current_path, sizeof(current_path));
 	printf ("The current working directory is %s", current_path);
 
@@ -124,14 +142,9 @@ int olsrd_plugin_init(void) {
 }
 
 static void deserialize_stations_data(unsigned char *buff) {
-	printf("Alloco: %d\n", p_size_t * sizeof(*p_data));
-	p_data = (struct plc_data *) malloc(p_size_t * sizeof(*p_data));
 	int i;
-//	for (i = 0; i < p_size_t * sizeof(*p_data); i++) {
-//		printf("Buff[%d]: %x\n",i,buff[i]);
-//	}
-
-
+	printf("Alloco: %lu\n", p_size_t * sizeof(*p_data));
+	p_data = (struct plc_data *) malloc(p_size_t * sizeof(*p_data));
 	for (i = 0; i < p_size_t; i++) {
 		p_data[i].mac[0] = buff[0 + 8 * i];
 		p_data[i].mac[1] = buff[1 + 8 * i];
@@ -157,6 +170,7 @@ static void print_plc_data(void) {
 
 static void update_plc_data(void) {
 	const char* const socket_name = "faifaproxy";
+	int error;
 	/* Create the socket.  */
 	socket_fd = socket(PF_LOCAL, SOCK_STREAM, 0);
 	/* Store the server's name in the socket address.  */
@@ -165,7 +179,6 @@ static void update_plc_data(void) {
 	printf("socket plugin: %s\n", name.sun_path);
 
 	/* Connect the socket.  */
-	int error;
 	error = 1;
 	while (error != 0) {
 		error = connect(socket_fd, &name, SUN_LEN (&name));
@@ -199,6 +212,23 @@ static void update_plc_data(void) {
 		}
 	}
 }
+
+void get_plc_mac(unsigned char *mac)
+{
+	memcpy(mac, plc_mac, 6);
+}
+
+int get_plc_data_size(void)
+{
+	return p_size_t;
+}
+
+void get_plc_data(void *p)
+{
+	memcpy(p, p_data, p_size_t * sizeof(*p_data));
+}
+
+
 
 /****************************************************************************
  *       Optional private constructor and destructor functions              *
