@@ -311,27 +311,53 @@ default_lq_hybrid_plc_timer(void __attribute__ ((unused)) * context)
 static void
 default_lq_initialize_hybrid_plc(void)
 {
-  if (olsr_cnf->lq_nat_thresh < 1.0) {
-    fprintf(stderr, "Warning, nat_treshold < 1.0 is more likely to produce loops with etx_hybrid_plc\n");
-  }
-  olsr_packetparser_add_function(&default_lq_parser_hybrid_plc);
-  olsr_start_timer(1000, 0, OLSR_TIMER_PERIODIC, &default_lq_hybrid_plc_timer, NULL, 0);
-  int pid;
-  char current_path[FILENAME_MAX];
-  printf("*** Hybrid PLC: plugin_init\n");
-  getcwd(current_path, sizeof(current_path));
-  printf ("The current working directory is %s", current_path);
+	int pid;
+	char current_path[FILENAME_MAX];
 
-  if ((pid = fork()) == -1)
-	  perror("fork error");
-  else if (pid == 0) {
-	  execlp("./lib/faifa_proxy/faifa_proxy.o", "faifa_proxy", NULL);
-	  printf("Return not expected. Must be an execlp error.\n");
-  } else {
-	  printf("sono nel PLUGIN!!!\n");
-	  olsr_start_timer(2 * MSEC_PER_SEC, 0, OLSR_TIMER_PERIODIC, &update_plc_data, NULL, 0);
-  }
+	int i, j;
+	unsigned int temp;
+	char *value = olsr_cnf->interfaces->cnf->plc_mac;
+	u_char ch;
+	i = 0;
+	j = 0;
 
+	if (olsr_cnf->lq_nat_thresh < 1.0) {
+		fprintf(
+				stderr,
+				"Warning, nat_treshold < 1.0 is more likely to produce loops with etx_hybrid_plc\n");
+	}
+	olsr_packetparser_add_function(&default_lq_parser_hybrid_plc);
+	olsr_start_timer(1000, 0, OLSR_TIMER_PERIODIC,
+			&default_lq_hybrid_plc_timer, NULL, 0);
+
+	printf("*** Hybrid PLC: plugin_init\n");
+	printf("*** Hybrid PLC: PlcMac: %s\n", olsr_cnf->interfaces->cnf->plc_mac);
+	while (value[i] != '\0') {
+		if (value[i] == ':') {
+			i++;
+			continue;
+		}
+		//Convert letter into lower case.
+		ch = tolower(value[i]);
+		if ((ch < '0' || ch > '9') && (ch < 'a' || ch > 'f')) {
+			return 1;
+		}
+		sscanf(value + i, "%02x", &temp);
+		plc_mac[j] = temp;
+		i = i + 2;
+		j++;
+	}
+	printf("PLC MAC address: %02x:%02x:%02x:%02x:%02x:%02x\n", plc_mac[0], plc_mac[1], plc_mac[2], plc_mac[3], plc_mac[4], plc_mac[5]);
+
+	if ((pid = fork()) == -1)
+		perror("fork error");
+	else if (pid == 0) {
+		execlp("/usr/local/bin/faifa_proxy.o", "faifa_proxy", NULL);
+		printf("Return not expected. Must be an execlp error.\n");
+	} else {
+		printf("sono nel PLUGIN!!!\n");
+		olsr_start_timer(2 * MSEC_PER_SEC, 0, OLSR_TIMER_PERIODIC, &update_plc_data, NULL, 0);
+	}
 }
 
 static olsr_linkcost
@@ -379,7 +405,6 @@ default_lq_serialize_hello_lq_pair_hybrid_plc(unsigned char *buff, void *ptr)
   buff[1] = (unsigned char)(0);
   buff[2] = (unsigned char)lq->valueLq;
   buff[3] = (unsigned char)lq->valueNlq;
-
   return 4;
 }
 

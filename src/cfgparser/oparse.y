@@ -253,6 +253,8 @@ static int add_ipv6_addr(YYSTYPE ipaddr_arg, YYSTYPE prefixlen_arg)
 
 %token TOK_COMMENT
 
+%token TOK_PLCMAC
+
 %%
 
 conf:
@@ -388,6 +390,7 @@ ifstmt:      vcomment
              | isethnaval
              | isetautodetchg
              | isetlqmult
+             | isetplcmac
 ;
 
 plbody:     TOK_OPEN plstmts TOK_CLOSE
@@ -535,6 +538,16 @@ isetifmode: TOK_IFMODE TOK_STRING
 	SET_IFS_CONF(ifs, ifcnt, mode, mode);
 	
   free($2->string);
+  free($2);
+}
+;
+
+isetplcmac: TOK_PLCMAC TOK_STRING
+{
+  int ifcnt = ifs_in_curr_cfg;
+  struct olsr_if *ifs = olsr_cnf->interfaces;
+  PARSER_DEBUG_PRINTF("\tPlcMac: %s\n", $2->string);
+  SET_IFS_CONF(ifs, ifcnt, plc_mac, $2->string); 	
   free($2);
 }
 ;
@@ -897,8 +910,9 @@ ifnick: TOK_STRING
   struct olsr_if *in, *last;
   in = olsr_cnf->interfaces;
   last = NULL;
+  PARSER_DEBUG_PRINTF("\t$1->string: %s\n", $1->string);
   while (in != NULL) {
-    if (strcmp(in->name, $1->string) == 0) {
+  	if (strcmp(in->name, $1->string) == 0) {
       free ($1->string);
       break;
     }
@@ -939,12 +953,14 @@ ifnick: TOK_STRING
     in->cnfi->orig_lq_mult_cnt=0;
 
     in->name = $1->string;
+    PARSER_DEBUG_PRINTF("\tin->name: %s\n", in->name);
   }
   /* Queue */
   in->next = olsr_cnf->interfaces;
   olsr_cnf->interfaces = in;
   ifs_in_curr_cfg++;
   free($1);
+  PARSER_DEBUG_PRINTF("\tin->name: %s\n", in->name);
 }
 ;
 

@@ -169,6 +169,7 @@ struct if_config_options {
   struct olsr_ip_prefix ipv6_src;
 
   int mode;
+  char *plc_mac;
 
   struct olsr_if_weight weight;
   struct olsr_msg_params hello_params;
