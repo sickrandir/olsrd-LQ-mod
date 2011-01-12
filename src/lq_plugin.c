@@ -168,7 +168,7 @@ int
 olsr_serialize_hello_lq_pair(unsigned char *buff, struct lq_hello_neighbor *neigh)
 {
   assert((const char *)neigh + sizeof(*neigh) >= (const char *)neigh->linkquality);
-  return active_lq_handler->serialize_hello_lq(buff, neigh->linkquality);
+  return active_lq_handler->serialize_hello_lq(buff, neigh);
 }
 
 /**
@@ -184,7 +184,7 @@ void
 olsr_deserialize_hello_lq_pair(const uint8_t ** curr, struct hello_neighbor *neigh)
 {
   assert((const char *)neigh + sizeof(*neigh) >= (const char *)neigh->linkquality);
-  active_lq_handler->deserialize_hello_lq(curr, neigh->linkquality);
+  active_lq_handler->deserialize_hello_lq(curr, neigh);
   neigh->cost = active_lq_handler->calc_hello_cost(neigh->linkquality);
 }
 
@@ -202,7 +202,7 @@ int
 olsr_serialize_tc_lq_pair(unsigned char *buff, struct tc_mpr_addr *neigh)
 {
   assert((const char *)neigh + sizeof(*neigh) >= (const char *)neigh->linkquality);
-  return active_lq_handler->serialize_tc_lq(buff, neigh->linkquality);
+  return active_lq_handler->serialize_tc_lq(buff, neigh);
 }
 
 /**
@@ -217,7 +217,7 @@ void
 olsr_deserialize_tc_lq_pair(const uint8_t ** curr, struct tc_edge_entry *edge)
 {
   assert((const char *)edge + sizeof(*edge) >= (const char *)edge->linkquality);
-  active_lq_handler->deserialize_tc_lq(curr, edge->linkquality);
+  active_lq_handler->deserialize_tc_lq(curr, edge);
 }
 
 /**
@@ -253,9 +253,9 @@ olsr_memorize_foreign_hello_lq(struct link_entry *local, struct hello_neighbor *
   assert((const char *)local + sizeof(*local) >= (const char *)local->linkquality);
   if (foreign) {
     assert((const char *)foreign + sizeof(*foreign) >= (const char *)foreign->linkquality);
-    active_lq_handler->memorize_foreign_hello(local->linkquality, foreign->linkquality);
+    active_lq_handler->memorize_foreign_hello(local, foreign);
   } else {
-    active_lq_handler->memorize_foreign_hello(local->linkquality, NULL);
+    active_lq_handler->memorize_foreign_hello(local, NULL);
   }
 }
 
@@ -339,7 +339,7 @@ olsr_copy_hello_lq(struct lq_hello_neighbor *target, struct link_entry *source)
 {
   assert((const char *)target + sizeof(*target) >= (const char *)target->linkquality);
   assert((const char *)source + sizeof(*source) >= (const char *)source->linkquality);
-  active_lq_handler->copy_link_lq_into_neigh(target->linkquality, source->linkquality);
+  active_lq_handler->copy_link_lq_into_neigh(target, source);
 }
 
 /**
@@ -356,7 +356,7 @@ olsr_copylq_link_entry_2_tc_mpr_addr(struct tc_mpr_addr *target, struct link_ent
 {
   assert((const char *)target + sizeof(*target) >= (const char *)target->linkquality);
   assert((const char *)source + sizeof(*source) >= (const char *)source->linkquality);
-  active_lq_handler->copy_link_lq_into_tc(target->linkquality, source->linkquality);
+  active_lq_handler->copy_link_lq_into_tc(target, source);
 }
 
 /**
@@ -373,12 +373,12 @@ olsr_copylq_link_entry_2_tc_edge_entry(struct tc_edge_entry *target, struct link
 {
   assert((const char *)target + sizeof(*target) >= (const char *)target->linkquality);
   assert((const char *)source + sizeof(*source) >= (const char *)source->linkquality);
-  active_lq_handler->copy_link_lq_into_tc(target->linkquality, source->linkquality);
+  active_lq_handler->copy_link_lq_into_tc(target, source);
 }
 
 /* clear the lq of a link set entry */
 void olsr_clear_hello_lq(struct link_entry *link) {
-  active_lq_handler->clear_hello(link->linkquality);
+  active_lq_handler->clear_hello(link);
 }
 
 /**
@@ -392,7 +392,7 @@ void
 olsr_clear_tc_lq(struct tc_mpr_addr *target)
 {
   assert((const char *)target + sizeof(*target) >= (const char *)target->linkquality);
-  active_lq_handler->clear_tc(target->linkquality);
+  active_lq_handler->clear_tc(target);
 }
 
 /**
@@ -413,7 +413,7 @@ olsr_malloc_hello_neighbor(const char *id)
   h = olsr_malloc(sizeof(struct hello_neighbor) + active_lq_handler->hello_lq_size, id);
 
   assert((const char *)h + sizeof(*h) >= (const char *)h->linkquality);
-  active_lq_handler->clear_hello(h->linkquality);
+  active_lq_handler->clear_hello(h);
   return h;
 }
 
@@ -435,7 +435,7 @@ olsr_malloc_tc_mpr_addr(const char *id)
   t = olsr_malloc(sizeof(struct tc_mpr_addr) + active_lq_handler->tc_lq_size, id);
 
   assert((const char *)t + sizeof(*t) >= (const char *)t->linkquality);
-  active_lq_handler->clear_tc(t->linkquality);
+  active_lq_handler->clear_tc(t);
   return t;
 }
 
@@ -457,7 +457,7 @@ olsr_malloc_lq_hello_neighbor(const char *id)
   h = olsr_malloc(sizeof(struct lq_hello_neighbor) + active_lq_handler->hello_lq_size, id);
 
   assert((const char *)h + sizeof(*h) >= (const char *)h->linkquality);
-  active_lq_handler->clear_hello(h->linkquality);
+  active_lq_handler->clear_hello(h);
   return h;
 }
 
@@ -479,7 +479,7 @@ olsr_malloc_link_entry(const char *id)
   h = olsr_malloc(sizeof(struct link_entry) + active_lq_handler->hello_lq_size, id);
 
   assert((const char *)h + sizeof(*h) >= (const char *)h->linkquality);
-  active_lq_handler->clear_hello(h->linkquality);
+  active_lq_handler->clear_hello(h);
   return h;
 }
 
