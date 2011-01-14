@@ -253,7 +253,7 @@ static int add_ipv6_addr(YYSTYPE ipaddr_arg, YYSTYPE prefixlen_arg)
 
 %token TOK_COMMENT
 
-%token TOK_PLCMAC
+//%token TOK_PLCMAC
 
 %%
 
@@ -390,7 +390,6 @@ ifstmt:      vcomment
              | isethnaval
              | isetautodetchg
              | isetlqmult
-             | isetplcmac
 ;
 
 plbody:     TOK_OPEN plstmts TOK_CLOSE
@@ -541,7 +540,7 @@ isetifmode: TOK_IFMODE TOK_STRING
   free($2);
 }
 ;
-
+/*
 isetplcmac: TOK_PLCMAC TOK_STRING
 {
   int ifcnt = ifs_in_curr_cfg;
@@ -550,7 +549,7 @@ isetplcmac: TOK_PLCMAC TOK_STRING
   SET_IFS_CONF(ifs, ifcnt, plc_mac, $2->string); 	
   free($2);
 }
-;
+;*/
 
 /* called if prepended with TOK_IPV4MULTICAST TOK_IP4BROADCAST TOK_IPV4BROADCAST */
 isetipv4mc: TOK_IPV4_ADDR

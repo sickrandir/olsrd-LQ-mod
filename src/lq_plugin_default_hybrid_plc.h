@@ -67,6 +67,11 @@ struct default_lq_hybrid_plc_hello {
 
 extern struct lq_handler lq_etx_hybrid_plc_handler;
 
+struct ip_plc_mac_associtation {
+	u_int8_t ip[4];
+	u_int8_t mac[6];
+};
+
 #endif /*LQ_ETX_HYBRID_PLC_ */
 
 /*

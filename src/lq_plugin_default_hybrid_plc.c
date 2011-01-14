@@ -83,6 +83,7 @@ static void default_lq_clear_hybrid_plc_hello(void *target);
 static const char *default_lq_print_hybrid_plc(void *ptr, char separator, struct lqtextbuffer *buffer);
 static const char *default_lq_print_cost_hybrid_plc(olsr_linkcost cost, struct lqtextbuffer *buffer);
 
+static void get_plc_mac(void);
 static void update_plc_data(void);
 static void deserialize_stations_data(unsigned char *buff);
 
@@ -93,8 +94,10 @@ struct plc_data {
 };
 u_int8_t plc_mac[6];
 struct plc_data *p_data;
+extern struct ip_plc_mac_associtation *ip_plcmac_db;
 u_int8_t p_size_t;
 int socket_fd;
+const char* const socket_name = "faifaproxy";
 struct sockaddr_un name;
 
 
@@ -314,12 +317,6 @@ default_lq_initialize_hybrid_plc(void)
 	int pid;
 	char current_path[FILENAME_MAX];
 
-	int i, j;
-	unsigned int temp;
-	char *value = olsr_cnf->interfaces->cnf->plc_mac;
-	u_char ch;
-	i = 0;
-	j = 0;
 
 	if (olsr_cnf->lq_nat_thresh < 1.0) {
 		fprintf(
@@ -331,23 +328,8 @@ default_lq_initialize_hybrid_plc(void)
 			&default_lq_hybrid_plc_timer, NULL, 0);
 
 	printf("*** Hybrid PLC: plugin_init\n");
-	printf("*** Hybrid PLC: PlcMac: %s\n", olsr_cnf->interfaces->cnf->plc_mac);
-	while (value[i] != '\0') {
-		if (value[i] == ':') {
-			i++;
-			continue;
-		}
-		//Convert letter into lower case.
-		ch = tolower(value[i]);
-		if ((ch < '0' || ch > '9') && (ch < 'a' || ch > 'f')) {
-			return 1;
-		}
-		sscanf(value + i, "%02x", &temp);
-		plc_mac[j] = temp;
-		i = i + 2;
-		j++;
-	}
-	printf("PLC MAC address: %02x:%02x:%02x:%02x:%02x:%02x\n", plc_mac[0], plc_mac[1], plc_mac[2], plc_mac[3], plc_mac[4], plc_mac[5]);
+
+	//printf("PLC MAC address: %02x:%02x:%02x:%02x:%02x:%02x\n", plc_mac[0], plc_mac[1], plc_mac[2], plc_mac[3], plc_mac[4], plc_mac[5]);
 
 	if ((pid = fork()) == -1)
 		perror("fork error");
@@ -356,6 +338,12 @@ default_lq_initialize_hybrid_plc(void)
 		printf("Return not expected. Must be an execlp error.\n");
 	} else {
 		printf("sono nel PLUGIN!!!\n");
+		/* Store the server's name in the socket address.  */
+		name.sun_family = AF_LOCAL;
+		strcpy(name.sun_path, socket_name);
+		printf("socket plugin: %s\n", name.sun_path);
+		sleep(2);
+		olsr_start_timer(10, 0, OLSR_TIMER_ONESHOT, &get_plc_mac, NULL, 0);
 		olsr_start_timer(2 * MSEC_PER_SEC, 0, OLSR_TIMER_PERIODIC, &update_plc_data, NULL, 0);
 	}
 }
@@ -400,22 +388,28 @@ static int
 default_lq_serialize_hello_lq_pair_hybrid_plc(unsigned char *buff, void *ptr)
 {
   struct default_lq_hybrid_plc *lq = ptr;
-
   buff[0] = (unsigned char)(0);
   buff[1] = (unsigned char)(0);
   buff[2] = (unsigned char)lq->valueLq;
   buff[3] = (unsigned char)lq->valueNlq;
+  buff[4] = (unsigned char)plc_mac[0];
+  buff[5] = (unsigned char)plc_mac[1];
+  buff[6] = (unsigned char)plc_mac[2];
+  buff[7] = (unsigned char)plc_mac[3];
+  buff[8] = (unsigned char)plc_mac[4];
+  buff[9] = (unsigned char)plc_mac[5];
   return 4;
 }
 
 static void
 default_lq_deserialize_hello_lq_pair_hybrid_plc(const uint8_t ** curr, void *ptr)
 {
-  struct default_lq_hybrid_plc *lq = ptr;
+  struct hello_neighbor *neigh = ptr;
 
   pkt_ignore_u16(curr);
   pkt_get_u8(curr, &lq->valueLq);
   pkt_get_u8(curr, &lq->valueNlq);
+
 }
 
 static int
@@ -530,6 +524,15 @@ default_lq_print_cost_hybrid_plc(olsr_linkcost cost, struct lqtextbuffer *buffer
   return buffer->buf;
 }
 
+static void deserialize_own_plc_mac(unsigned char *buff) {
+	plc_mac[0] = buff[0];
+	plc_mac[1] = buff[1];
+	plc_mac[2] = buff[2];
+	plc_mac[3] = buff[3];
+	plc_mac[4] = buff[4];
+	plc_mac[5] = buff[5];
+}
+
 static void deserialize_stations_data(unsigned char *buff) {
 	int i;
 	printf("Alloco: %lu\n", p_size_t * sizeof(*p_data));
@@ -546,47 +549,69 @@ static void deserialize_stations_data(unsigned char *buff) {
 	}
 }
 
+static void get_plc_mac(void) {
+	int error;
+	error = 1;
+	/* Create the socket.  */
+	socket_fd = socket(PF_LOCAL, SOCK_STREAM, 0);
+	while (error != 0) {
+		error = connect(socket_fd, &name, SUN_LEN (&name));
+		if (error == 0) {
+			char m = 'm';
+			unsigned char *buff;
+			buff = (unsigned char*) malloc(6);
+			send(socket_fd, &m, sizeof(m), 0);
+			printf("olsrd: MAC richiesto!\n");
+			if (recv(socket_fd, buff, 6, 0) == 0) {
+				printf("olsrd: Non ricevo il MAC!\n");
+				//return;
+			}
+			deserialize_own_plc_mac(buff);
+			free(buff);
+			printf("olsrd: My PLC MAC address: %02x:%02x:%02x:%02x:%02x:%02x\n", plc_mac[0], plc_mac[1], plc_mac[2], plc_mac[3], plc_mac[4], plc_mac[5]);
+			close(socket_fd);
+		} else {
+			printf("ERROR: %s\n", strerror(errno));
+			return;
+		}
+	}
+}
+
 static void update_plc_data(void) {
-	const char* const socket_name = "faifaproxy";
 	int error;
 	/* Create the socket.  */
 	socket_fd = socket(PF_LOCAL, SOCK_STREAM, 0);
-	/* Store the server's name in the socket address.  */
-	name.sun_family = AF_LOCAL;
-	strcpy(name.sun_path, socket_name);
-	printf("socket plugin: %s\n", name.sun_path);
-
 	/* Connect the socket.  */
 	error = 1;
 	while (error != 0) {
 		error = connect(socket_fd, &name, SUN_LEN (&name));
 		if (error == 0) {
-			printf("socket ok!\n");
-			printf("update PLC data!\n");
+			printf("olsrd: socket ok!\n");
+			printf("olsrd: update PLC data!\n");
 			char m = 'p';
+			unsigned char *buff;
 			u_int8_t n_stas;
 			int length;
-			unsigned char *buff;
 			send(socket_fd, &m, sizeof(m), 0);
-			printf("Poll mandato!\n");
+			printf("olsrd: Poll mandato!\n");
 			if (recv(socket_fd, &p_size_t, sizeof(p_size_t), 0) == 0) {
-				printf("Non ricevo p_size_t!\n");
+				printf("olsrd: Non ricevo p_size_t!\n");
 				//return;
 			}
-			printf("Numero di stazioni presenti ricevuto: %d\n", p_size_t);
+			printf("olsrd: Numero di stazioni presenti ricevuto: %d\n", p_size_t);
 			length = p_size_t * sizeof(struct plc_data);
 			buff = (unsigned char*) malloc(length);
 			if (recv(socket_fd, buff, length, 0) == 0) {
-				printf("Non ricevo buff!\n");
+				printf("olsrd: Non ricevo buff!\n");
 				//return;
 			}
-			recv(socket_fd, buff, length, 0);
 			deserialize_stations_data(buff);
 			//print_plc_data();
 			close(socket_fd);
 
 		} else {
 			printf("ERROR: %s\n", strerror(errno));
+			return;
 		}
 	}
 }

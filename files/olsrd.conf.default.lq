@@ -42,6 +42,6 @@ Interface "br0"
     # (default is "mesh")
 
     Mode "PLC"
-    PlcMac "00:0C:C3:44:0C:F3"
+    # PlcMac "00:0C:C3:44:0C:F3"
     
 }
